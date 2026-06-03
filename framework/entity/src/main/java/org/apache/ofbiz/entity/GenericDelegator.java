@@ -22,6 +22,7 @@ package org.apache.ofbiz.entity;
 import java.io.IOException;
 import java.net.URL;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -1172,24 +1173,75 @@ public class GenericDelegator implements Delegator {
         return removeByCondition(entityName, ecl);
     }
 
-    public Map<String, Object> removeByAnd(String entityName, Map<String, ? extends Object> fields, boolean dryRun)
-            throws GenericEntityException {
+    public Map<String, Object> removeByAnd(String entityName, boolean dryRun, Object... fields) throws GenericEntityException {
+        return removeByAnd(entityName, dryRun, UtilMisc.<String, Object>toMap(fields));
+    }
+
+    public Map<String, Object> removeByAnd(String entityName, boolean dryRun, Map<String, ? extends Object> fields) throws GenericEntityException {
         EntityCondition ecl = EntityCondition.makeCondition(fields);
-        List<GenericValue> matchedValues = findList(entityName, ecl, null, null, null, false);
+        return removeByCondition(entityName, dryRun, ecl);
+    }
 
-        int count = matchedValues.size();
-        List<GenericPK> primaryKeys = matchedValues.stream()
-                .map(GenericValue::getPrimaryKey)
-                .collect(Collectors.toList());
+    private Map<String, Object> removeByCondition(String entityName, boolean dryRun, EntityCondition condition) throws GenericEntityException {
+        ModelEntity modelEntity = getModelReader().getModelEntity(entityName);
+        List<GenericValue> entitiesToRemove = findList(entityName, condition, null, null, null, false);
 
-        if (!dryRun) {
-            removeByCondition(entityName, ecl);
+        List<GenericPK> primaryKeys = new ArrayList<>();
+        for (GenericValue entity : entitiesToRemove) {
+            primaryKeys.add(entity.getPrimaryKey());
         }
 
         Map<String, Object> result = new HashMap<>();
-        result.put("count", count);
+        result.put("count", entitiesToRemove.size());
         result.put("primaryKeys", primaryKeys);
-        return result;
+
+        if (dryRun) {
+            return result;
+        }
+
+        boolean beganTransaction = false;
+        try {
+            if (ALWAYS_USE_TRANS) {
+                beganTransaction = TransactionUtil.begin();
+            }
+
+            GenericHelper helper = getEntityHelper(entityName);
+
+            String entityEcaReaderName = EntityEcaUtil.getEntityEcaReaderName(this.delegatorBaseName);
+            boolean hasEntityEcaRules = UtilValidate.isNotEmpty(
+                    EntityEcaUtil.getEntityEcaCache(entityEcaReaderName).get(entityName));
+
+            List<GenericValue> removedEntities = (testMode || hasEntityEcaRules)
+                    ? entitiesToRemove
+                    : Collections.emptyList();
+
+            int rowsAffected = 0;
+            if (!removedEntities.isEmpty()) {
+                for (GenericValue entity : removedEntities) {
+                    rowsAffected += removeValue(entity);
+                }
+            } else {
+                rowsAffected = helper.removeByCondition(this, modelEntity, condition);
+                if (rowsAffected > 0) {
+                    this.clearCacheLine(entityName);
+                }
+            }
+
+            if (testMode) {
+                for (GenericValue entity : removedEntities) {
+                    storeForTestRollback(new TestOperation(OperationType.DELETE, entity));
+                }
+            }
+
+            TransactionUtil.commit(beganTransaction);
+            result.put("count", rowsAffected);
+            return result;
+        } catch (IllegalStateException | GenericEntityException e) {
+            String errMsg = "Failure in removeByCondition operation for entity [" + entityName + "]: " + e.toString() + ". Rolling back transaction.";
+            Debug.logError(e, errMsg, MODULE);
+            TransactionUtil.rollback(beganTransaction, errMsg, e);
+            throw new GenericEntityException(e);
+        }
     }
 
     /* (non-Javadoc)
