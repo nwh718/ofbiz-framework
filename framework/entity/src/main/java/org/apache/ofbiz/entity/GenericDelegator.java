@@ -1164,14 +1164,6 @@ public class GenericDelegator implements Delegator {
     }
 
     /* (non-Javadoc)
-     * @see org.apache.ofbiz.entity.Delegator#removeByAnd(java.lang.String, boolean, java.lang.Object)
-     */
-    @Override
-    public Object removeByAnd(String entityName, boolean dryRun, Object... fields) throws GenericEntityException {
-        return removeByAnd(entityName, dryRun, UtilMisc.<String, Object>toMap(fields));
-    }
-
-    /* (non-Javadoc)
      * @see org.apache.ofbiz.entity.Delegator#removeByAnd(java.lang.String, java.util.Map)
      */
     @Override
@@ -1180,24 +1172,24 @@ public class GenericDelegator implements Delegator {
         return removeByCondition(entityName, ecl);
     }
 
-    /* (non-Javadoc)
-     * @see org.apache.ofbiz.entity.Delegator#removeByAnd(java.lang.String, boolean, java.util.Map)
-     */
-    @Override
-    public Object removeByAnd(String entityName, boolean dryRun, Map<String, ? extends Object> fields) throws GenericEntityException {
+    public Map<String, Object> removeByAnd(String entityName, Map<String, ? extends Object> fields, boolean dryRun)
+            throws GenericEntityException {
         EntityCondition ecl = EntityCondition.makeCondition(fields);
-        if (dryRun) {
-            List<GenericValue> values = this.findList(entityName, ecl, null, null, null, false);
-            List<GenericPK> primaryKeys = new LinkedList<>();
-            for (GenericValue value : values) {
-                primaryKeys.add(value.getPrimaryKey());
-            }
-            Map<String, Object> result = new HashMap<>();
-            result.put("count", values.size());
-            result.put("primaryKeys", primaryKeys);
-            return result;
+        List<GenericValue> matchedValues = findList(entityName, ecl, null, null, null, false);
+
+        int count = matchedValues.size();
+        List<GenericPK> primaryKeys = matchedValues.stream()
+                .map(GenericValue::getPrimaryKey)
+                .collect(Collectors.toList());
+
+        if (!dryRun) {
+            removeByCondition(entityName, ecl);
         }
-        return removeByCondition(entityName, ecl);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("count", count);
+        result.put("primaryKeys", primaryKeys);
+        return result;
     }
 
     /* (non-Javadoc)
