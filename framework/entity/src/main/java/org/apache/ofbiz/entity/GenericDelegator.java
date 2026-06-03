@@ -1173,55 +1173,34 @@ public class GenericDelegator implements Delegator {
     }
 
     /* (non-Javadoc)
-     * @see org.apache.ofbiz.entity.Delegator#removeByAnd(java.lang.String, java.util.Map, boolean)
-     */
-    @Override
-    public Map<String, Object> removeByAnd(String entityName, Map<String, ? extends Object> fields, boolean dryRun) throws GenericEntityException {
-        EntityCondition ecl = EntityCondition.makeCondition(fields);
-        return removeByCondition(entityName, ecl, dryRun);
-    }
-
-    /* (non-Javadoc)
      * @see org.apache.ofbiz.entity.Delegator#removeByCondition(java.lang.String, org.apache.ofbiz.entity.condition.EntityCondition)
      */
     @Override
     public int removeByCondition(String entityName, EntityCondition condition) throws GenericEntityException {
-        Map<String, Object> result = removeByCondition(entityName, condition, false);
-        return result != null ? (Integer) result.get("count") : 0;
-    }
-
-    /* (non-Javadoc)
-     * @see org.apache.ofbiz.entity.Delegator#removeByCondition(java.lang.String, org.apache.ofbiz.entity.condition.EntityCondition, boolean)
-     */
-    @Override
-    public Map<String, Object> removeByCondition(String entityName, EntityCondition condition, boolean dryRun) throws GenericEntityException {
         boolean beganTransaction = false;
         try {
-            if (ALWAYS_USE_TRANS && !dryRun) {
+            if (ALWAYS_USE_TRANS) {
                 beganTransaction = TransactionUtil.begin();
             }
 
             ModelEntity modelEntity = getModelReader().getModelEntity(entityName);
             GenericHelper helper = getEntityHelper(entityName);
 
+            // We check if there are eca rules for this entity
             String entityEcaReaderName = EntityEcaUtil.getEntityEcaReaderName(this.delegatorBaseName);
             boolean hasEntityEcaRules = UtilValidate.isNotEmpty(
                     EntityEcaUtil.getEntityEcaCache(entityEcaReaderName).get(entityName));
 
-            List<GenericValue> entitiesToRemove = (testMode || hasEntityEcaRules || dryRun)
+            // When we delete in mass, if we are in test mode or the entity have an eeca linked we will remove one by one
+            // for test mode to help the rollback
+            // for eeca to analyse each value to check if a condition match
+            List<GenericValue> removedEntities = (testMode || hasEntityEcaRules)
                     ? findList(entityName, condition, null, null, null, false)
                     : Collections.emptyList();
 
             int rowsAffected = 0;
-            List<GenericPK> primaryKeys = new ArrayList<>();
-
-            if (dryRun) {
-                for (GenericValue entity : entitiesToRemove) {
-                    primaryKeys.add(entity.getPrimaryKey());
-                    rowsAffected++;
-                }
-            } else if (!entitiesToRemove.isEmpty()) {
-                for (GenericValue entity : entitiesToRemove) {
+            if (!removedEntities.isEmpty()) {
+                for (GenericValue entity : removedEntities) {
                     rowsAffected += removeValue(entity);
                 }
             } else {
@@ -1231,26 +1210,17 @@ public class GenericDelegator implements Delegator {
                 }
             }
 
-            if (testMode && !dryRun) {
-                for (GenericValue entity : entitiesToRemove) {
+            if (testMode) {
+                for (GenericValue entity : removedEntities) {
                     storeForTestRollback(new TestOperation(OperationType.DELETE, entity));
                 }
             }
-
-            if (!dryRun) {
-                TransactionUtil.commit(beganTransaction);
-            }
-
-            Map<String, Object> result = new HashMap<>();
-            result.put("count", rowsAffected);
-            result.put("primaryKeys", primaryKeys);
-            return result;
+            TransactionUtil.commit(beganTransaction);
+            return rowsAffected;
         } catch (IllegalStateException | GenericEntityException e) {
             String errMsg = "Failure in removeByCondition operation for entity [" + entityName + "]: " + e.toString() + ". Rolling back transaction.";
             Debug.logError(e, errMsg, MODULE);
-            if (!dryRun) {
-                TransactionUtil.rollback(beganTransaction, errMsg, e);
-            }
+            TransactionUtil.rollback(beganTransaction, errMsg, e);
             throw new GenericEntityException(e);
         }
     }
