@@ -799,6 +799,21 @@ public interface Delegator extends DelegatorProvider {
 
     /**
      * Removes/deletes Generic Entity records found by all of the specified
+     * fields (ie: combined using AND). If dryRun is true, it only returns a Map containing
+     * count and primaryKeys without actually deleting records.
+     * @param entityName
+     *            The Name of the Entity as defined in the entity XML file
+     * @param dryRun
+     *            If true, does not delete records, but returns expected delete count and primary keys
+     * @param fields
+     *            The fields of the named entity to query by with their
+     *            corresponding values
+     * @return If dryRun is true, returns Map containing count and primaryKeys, else returns int (number of rows effected)
+     */
+    Object removeByAnd(String entityName, boolean dryRun, Map<String, ? extends Object> fields) throws GenericEntityException;
+
+    /**
+     * Removes/deletes Generic Entity records found by all of the specified
      * fields (ie: combined using AND)
      * @param entityName
      *            The Name of the Entity as defined in the entity XML file
@@ -808,6 +823,21 @@ public interface Delegator extends DelegatorProvider {
      * @return int representing number of rows effected by this operation
      */
     int removeByAnd(String entityName, Object... fields) throws GenericEntityException;
+
+    /**
+     * Removes/deletes Generic Entity records found by all of the specified
+     * fields (ie: combined using AND). If dryRun is true, it only returns a Map containing
+     * count and primaryKeys without actually deleting records.
+     * @param entityName
+     *            The Name of the Entity as defined in the entity XML file
+     * @param dryRun
+     *            If true, does not delete records, but returns expected delete count and primary keys
+     * @param fields
+     *            The fields of the named entity to query by with their
+     *            corresponding values
+     * @return If dryRun is true, returns Map containing count and primaryKeys, else returns int (number of rows effected)
+     */
+    Object removeByAnd(String entityName, boolean dryRun, Object... fields) throws GenericEntityException;
 
     /**
      * Removes/deletes Generic Entity records found by the condition

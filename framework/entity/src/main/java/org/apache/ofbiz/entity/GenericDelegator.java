@@ -1163,8 +1163,12 @@ public class GenericDelegator implements Delegator {
         return removeByAnd(entityName, UtilMisc.<String, Object>toMap(fields));
     }
 
-    public Map<String, Object> removeByAnd(String entityName, boolean dryRun, Object... fields) throws GenericEntityException {
-        return removeByAnd(entityName, UtilMisc.<String, Object>toMap(fields), dryRun);
+    /* (non-Javadoc)
+     * @see org.apache.ofbiz.entity.Delegator#removeByAnd(java.lang.String, boolean, java.lang.Object)
+     */
+    @Override
+    public Object removeByAnd(String entityName, boolean dryRun, Object... fields) throws GenericEntityException {
+        return removeByAnd(entityName, dryRun, UtilMisc.<String, Object>toMap(fields));
     }
 
     /* (non-Javadoc)
@@ -1172,20 +1176,28 @@ public class GenericDelegator implements Delegator {
      */
     @Override
     public int removeByAnd(String entityName, Map<String, ? extends Object> fields) throws GenericEntityException {
-        return ((Number) removeByAnd(entityName, fields, false).get("count")).intValue();
+        EntityCondition ecl = EntityCondition.makeCondition(fields);
+        return removeByCondition(entityName, ecl);
     }
 
-    public Map<String, Object> removeByAnd(String entityName, Map<String, ? extends Object> fields, boolean dryRun)
-            throws GenericEntityException {
+    /* (non-Javadoc)
+     * @see org.apache.ofbiz.entity.Delegator#removeByAnd(java.lang.String, boolean, java.util.Map)
+     */
+    @Override
+    public Object removeByAnd(String entityName, boolean dryRun, Map<String, ? extends Object> fields) throws GenericEntityException {
         EntityCondition ecl = EntityCondition.makeCondition(fields);
         if (dryRun) {
-            List<Map<String, Object>> primaryKeys = this.findList(entityName, ecl, null, null, null, false).stream()
-                    .map(GenericValue::getPrimaryKey)
-                    .map(primaryKey -> primaryKey.getAllFields())
-                    .collect(Collectors.toList());
-            return UtilMisc.<String, Object>toMap("count", primaryKeys.size(), "primaryKeys", primaryKeys);
+            List<GenericValue> values = this.findList(entityName, ecl, null, null, null, false);
+            List<GenericPK> primaryKeys = new LinkedList<>();
+            for (GenericValue value : values) {
+                primaryKeys.add(value.getPrimaryKey());
+            }
+            Map<String, Object> result = new HashMap<>();
+            result.put("count", values.size());
+            result.put("primaryKeys", primaryKeys);
+            return result;
         }
-        return UtilMisc.<String, Object>toMap("count", removeByCondition(entityName, ecl), "primaryKeys", Collections.emptyList());
+        return removeByCondition(entityName, ecl);
     }
 
     /* (non-Javadoc)
