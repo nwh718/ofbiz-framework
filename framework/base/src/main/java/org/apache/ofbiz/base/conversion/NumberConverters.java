@@ -21,70 +21,58 @@ package org.apache.ofbiz.base.conversion;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.text.ParseException;
-import java.text.ParsePosition;
 import java.util.Locale;
 import java.util.TimeZone;
-import java.util.regex.Pattern;
 
 import org.apache.ofbiz.base.util.StringUtil;
 
 /** Number Converter classes. */
 public class NumberConverters implements ConverterLoader {
 
-    private static final Pattern SCIENTIFIC_NUMBER_PATTERN =
-            Pattern.compile("[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)[eE][+-]?\\d+");
-
     private static Number fromString(String str, Locale locale) throws ConversionException {
         locale = null != System.getProperty("testBigDecimal") ? locale : Locale.getDefault();
         NumberFormat nf = NumberFormat.getNumberInstance(locale);
         if (nf instanceof DecimalFormat) {
-            DecimalFormat decimalFormat = (DecimalFormat) nf;
             // CHECKSTYLE_OFF: ALMOST_ALL
-            decimalFormat.setParseBigDecimal(true);
+            ((DecimalFormat) nf).setParseBigDecimal(true);
             // CHECKSTYLE_ON: ALMOST_ALL
-            ParsePosition parsePosition = new ParsePosition(0);
-            Number parsed = decimalFormat.parse(str, parsePosition);
-            if (parsed != null && parsePosition.getIndex() == str.length()) {
-                return parsed;
-            }
-            String normalizedScientificNumber = normalizeScientificNumber(str, decimalFormat);
-            if (SCIENTIFIC_NUMBER_PATTERN.matcher(normalizedScientificNumber).matches()) {
-                try {
-                    return new BigDecimal(normalizedScientificNumber);
-                } catch (NumberFormatException e) {
-                    throw new ConversionException(createParseException(str, parsePosition));
-                }
-            }
-            if (parsed != null) {
-                return parsed;
-            }
-            throw new ConversionException(createParseException(str, parsePosition));
         }
+
+        boolean hasExponent = false;
+        for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (c == 'e' || c == 'E') {
+                hasExponent = true;
+                break;
+            }
+        }
+
+        if (hasExponent) {
+            try {
+                if (nf instanceof DecimalFormat) {
+                    DecimalFormat df = (DecimalFormat) nf;
+                    char decimalSeparator = df.getDecimalFormatSymbols().getDecimalSeparator();
+                    char groupingSeparator = df.getDecimalFormatSymbols().getGroupingSeparator();
+                    char minusSign = df.getDecimalFormatSymbols().getMinusSign();
+                    String cleanStr = str.replace(String.valueOf(groupingSeparator), "")
+                                         .replace(minusSign, '-')
+                                         .replace(decimalSeparator, '.');
+                    return new BigDecimal(cleanStr);
+                } else {
+                    return new BigDecimal(str);
+                }
+            } catch (NumberFormatException e) {
+                // Ignore and fall back to nf.parse
+            }
+        }
+
         try {
             return nf.parse(str);
         } catch (ParseException e) {
             throw new ConversionException(e);
         }
-    }
-
-    private static ParseException createParseException(String str, ParsePosition parsePosition) {
-        int errorIndex = parsePosition.getErrorIndex() >= 0 ? parsePosition.getErrorIndex() : parsePosition.getIndex();
-        return new ParseException("Unparseable number: \"" + str + "\"", errorIndex);
-    }
-
-    private static String normalizeScientificNumber(String str, DecimalFormat decimalFormat) {
-        DecimalFormatSymbols symbols = decimalFormat.getDecimalFormatSymbols();
-        String normalized = str.replace(String.valueOf(symbols.getGroupingSeparator()), "");
-        if (symbols.getDecimalSeparator() != '.') {
-            normalized = normalized.replace(symbols.getDecimalSeparator(), '.');
-        }
-        if (symbols.getMinusSign() != '-') {
-            normalized = normalized.replace(symbols.getMinusSign(), '-');
-        }
-        return normalized;
     }
 
     public abstract static class AbstractStringToNumberConverter<N extends Number> extends AbstractNumberConverter<String, N> {
