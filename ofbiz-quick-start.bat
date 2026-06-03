@@ -18,25 +18,20 @@ rem specific language governing permissions and limitations
 rem under the License.
 rem #####################################################################
 
-setlocal enabledelayedexpansion
-
-echo.
 echo ============================================================
-echo   Apache OFBiz - Quick Start Script (Windows)
+echo   Apache OFBiz - Quick Start (Windows)
 echo ============================================================
 echo.
 
+rem ------------------------------------------------------------------
 rem Step 1: Check JAVA_HOME
-echo [Step 1/4] Checking JAVA_HOME environment variable...
-echo.
-
+rem ------------------------------------------------------------------
+echo [Step 1/4] Checking JAVA_HOME ...
 if not defined JAVA_HOME (
-    echo [ERROR] JAVA_HOME is not set.
     echo.
-    echo Please set the JAVA_HOME environment variable to your JDK 17 installation directory.
-    echo For example: set JAVA_HOME=C:\Program Files\Java\jdk-17
-    echo.
-    echo You can download JDK 17 from: https://adoptopenjdk.net/
+    echo [ERROR] JAVA_HOME is not set!
+    echo Please install JDK 17 and set the JAVA_HOME environment variable.
+    echo Example: set JAVA_HOME=C:\Program Files\Java\jdk-17
     echo.
     pause
     exit /b 1
@@ -45,81 +40,101 @@ if not defined JAVA_HOME (
 echo JAVA_HOME = %JAVA_HOME%
 
 if not exist "%JAVA_HOME%\bin\java.exe" (
-    echo [ERROR] java.exe not found at "%JAVA_HOME%\bin\java.exe"
-    echo Please verify your JAVA_HOME setting points to a valid JDK 17 installation.
+    echo.
+    echo [ERROR] java.exe not found in %JAVA_HOME%\bin
+    echo Please verify that JAVA_HOME points to a valid JDK 17 installation.
     echo.
     pause
     exit /b 1
 )
 
-echo Java version:
-"%JAVA_HOME%\bin\java.exe" -version 2>&1
-echo.
-echo [OK] JAVA_HOME is correctly configured.
+echo [OK] JAVA_HOME is set correctly.
 echo.
 
+rem ------------------------------------------------------------------
 rem Step 2: Initialize Gradle wrapper
-echo [Step 2/4] Initializing Gradle wrapper...
-echo.
-
-call init-gradle-wrapper
-if %ERRORLEVEL% neq 0 (
+rem ------------------------------------------------------------------
+echo [Step 2/4] Initializing Gradle wrapper ...
+if not exist "init-gradle-wrapper.bat" (
     echo.
-    echo [ERROR] Failed to initialize Gradle wrapper (error code: %ERRORLEVEL%).
-    echo.
-    echo If you see "Powershell is not recognized", please visit:
-    echo   https://s.apache.org/vdcv8
-    echo.
-    echo You may also need to adjust PowerShell execution policy. See:
-    echo   https://s.apache.org/urnju
+    echo [ERROR] init-gradle-wrapper.bat not found in the current directory!
+    echo Please make sure you are running this script from the OFBiz top-level directory.
     echo.
     pause
-    exit /b %ERRORLEVEL%
+    exit /b 1
 )
 
-echo.
-echo [OK] Gradle wrapper initialized successfully.
+call init-gradle-wrapper.bat
+if %ERRORLEVEL% neq 0 (
+    echo.
+    echo [ERROR] Failed to initialize Gradle wrapper!
+    echo If you encounter a PowerShell error, check:
+    echo   - PowerShell version ^>= 7.1.3 is installed
+    echo   - Execution policy allows script execution
+    echo See: https://s.apache.org/vdcv8 and https://s.apache.org/urnju
+    echo.
+    pause
+    exit /b 1
+)
+
+echo [OK] Gradle wrapper initialized.
 echo.
 
+rem ------------------------------------------------------------------
 rem Step 3: Clean system and load complete OFBiz data
-echo [Step 3/4] Cleaning system and loading complete OFBiz data...
-echo This may take a long time on first run as dependencies need to be downloaded.
-echo Please be patient...
+rem ------------------------------------------------------------------
+echo [Step 3/4] Running: gradlew cleanAll loadAll
+echo WARNING: This will delete all previous data and reset to initial demo data.
+echo This may take a long time on first run (downloading dependencies)...
 echo.
 
 call gradlew.bat cleanAll loadAll
 if %ERRORLEVEL% neq 0 (
     echo.
-    echo [ERROR] Failed to clean and load OFBiz data (error code: %ERRORLEVEL%).
+    echo [ERROR] gradlew cleanAll loadAll failed!
+    echo Please check the error messages above for details.
     echo.
     pause
-    exit /b %ERRORLEVEL%
+    exit /b 1
 )
 
-echo.
 echo [OK] OFBiz data loaded successfully.
 echo.
 
+rem ------------------------------------------------------------------
 rem Step 4: Start OFBiz
-echo [Step 4/4] Starting OFBiz...
-echo The progress indicator may stay at a certain percentage - this is normal.
-echo OFBiz will continue running until you press Ctrl+C to stop it.
-echo.
-echo ============================================================
-echo   Once startup is complete, visit OFBiz in your browser:
-echo.
-echo   Order Back Office  : https://localhost:8443/ordermgr
-echo   Accounting         : https://localhost:8443/accounting
-echo   Administrator      : https://localhost:8443/webtools
-echo.
-echo   Default login:
-echo     Username: admin
-echo     Password: ofbiz
-echo.
-echo   Press Ctrl+C to stop the OFBiz server.
-echo ============================================================
+rem ------------------------------------------------------------------
+echo [Step 4/4] Starting OFBiz ...
+echo Note: The progress percentage indicator can be ignored; this task
+echo       does not end as long as OFBiz is running.
 echo.
 
 call gradlew.bat ofbiz
+if %ERRORLEVEL% neq 0 (
+    echo.
+    echo [ERROR] OFBiz failed to start!
+    echo Please check the error messages above for details.
+    echo.
+    pause
+    exit /b 1
+)
 
-endlocal
+echo.
+echo ============================================================
+echo   OFBiz is now running!
+echo ============================================================
+echo.
+echo   Visit OFBiz through your browser:
+echo.
+echo     Order Back Office:       https://localhost:8443/ordermgr
+echo     Accounting Back Office:  https://localhost:8443/accounting
+echo     Administrator interface: https://localhost:8443/webtools
+echo.
+echo   Default login credentials:
+echo     Username: admin
+echo     Password: ofbiz
+echo.
+echo ============================================================
+echo.
+
+pause
