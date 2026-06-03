@@ -331,7 +331,6 @@ public final class ServiceDispatcher {
                 } else {
                     beganTrans = TransactionUtil.begin(modelService.getTransactionTimeout());
                 }
-                // enlist for XAResource debugging
                 enlistDebugXaResource(beganTrans, modelService.getName());
             }
 
@@ -459,7 +458,6 @@ public final class ServiceDispatcher {
                             TransactionUtil.rollback(beganTrans, retryMsg, null);
 
                             beganTrans = TransactionUtil.begin(modelService.getTransactionTimeout());
-                            // enlist for XAResource debugging
                             enlistDebugXaResource(beganTrans, modelService.getName());
 
                             if (!beganTrans) {
@@ -538,11 +536,7 @@ public final class ServiceDispatcher {
                 }
                 String errMsg = "Service [" + modelService.getName() + "] threw an unexpected exception/error";
                 engine.sendCallbacks(modelService, context, t, GenericEngine.SYNC_MODE);
-                try {
-                    TransactionUtil.rollback(beganTrans, errMsg, t);
-                } catch (GenericTransactionException te) {
-                    Debug.logError(te, "Cannot rollback transaction", MODULE);
-                }
+                rollbackTransaction(beganTrans, errMsg, t);
                 rs.setEndStamp();
                 if (t instanceof ServiceAuthException) {
                     throw (ServiceAuthException) t;
@@ -702,7 +696,6 @@ public final class ServiceDispatcher {
                 } else {
                     beganTrans = TransactionUtil.begin(service.getTransactionTimeout());
                 }
-                // enlist for XAResource debugging
                 enlistDebugXaResource(beganTrans, service.getName());
             }
 
@@ -762,11 +755,7 @@ public final class ServiceDispatcher {
                 String errMsg = "Service [" + service.getName() + "] threw an unexpected exception/error";
                 Debug.logError(t, errMsg, MODULE);
                 engine.sendCallbacks(service, context, t, GenericEngine.ASYNC_MODE);
-                try {
-                    TransactionUtil.rollback(beganTrans, errMsg, t);
-                } catch (GenericTransactionException te) {
-                    Debug.logError(te, "Cannot rollback transaction", MODULE);
-                }
+                rollbackTransaction(beganTrans, errMsg, t);
                 if (t instanceof ServiceAuthException) {
                     throw (ServiceAuthException) t;
                 } else if (t instanceof ServiceValidationException) {
@@ -1057,14 +1046,12 @@ public final class ServiceDispatcher {
     }
 
     private RunningService logService(String localName, ModelService modelService, int mode) {
-        // set up the running service log
         RunningService rs = new RunningService(localName, modelService, mode);
         RUN_LOG.put(rs, this);
         return rs;
     }
 
     private static void enlistDebugXaResource(boolean beganTrans, String serviceName) {
-        // enlist for XAResource debugging
         if (beganTrans && TransactionUtil.debugResources()) {
             DebugXaResource dxa = new DebugXaResource(serviceName);
             try {
@@ -1072,6 +1059,14 @@ public final class ServiceDispatcher {
             } catch (Exception e) {
                 Debug.logError(e, MODULE);
             }
+        }
+    }
+
+    private static void rollbackTransaction(boolean beganTrans, String errMsg, Throwable t) {
+        try {
+            TransactionUtil.rollback(beganTrans, errMsg, t);
+        } catch (GenericTransactionException e) {
+            Debug.logError(e, "Cannot rollback transaction", MODULE);
         }
     }
 
