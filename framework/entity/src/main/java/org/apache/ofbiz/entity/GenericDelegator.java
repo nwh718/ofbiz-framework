@@ -22,7 +22,6 @@ package org.apache.ofbiz.entity;
 import java.io.IOException;
 import java.net.URL;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -1173,75 +1172,13 @@ public class GenericDelegator implements Delegator {
         return removeByCondition(entityName, ecl);
     }
 
-    public Map<String, Object> removeByAnd(String entityName, boolean dryRun, Object... fields) throws GenericEntityException {
-        return removeByAnd(entityName, dryRun, UtilMisc.<String, Object>toMap(fields));
-    }
-
-    public Map<String, Object> removeByAnd(String entityName, boolean dryRun, Map<String, ? extends Object> fields) throws GenericEntityException {
+    /* (non-Javadoc)
+     * @see org.apache.ofbiz.entity.Delegator#removeByAnd(java.lang.String, java.util.Map, boolean)
+     */
+    @Override
+    public Map<String, Object> removeByAnd(String entityName, Map<String, ? extends Object> fields, boolean dryRun) throws GenericEntityException {
         EntityCondition ecl = EntityCondition.makeCondition(fields);
-        return removeByCondition(entityName, dryRun, ecl);
-    }
-
-    private Map<String, Object> removeByCondition(String entityName, boolean dryRun, EntityCondition condition) throws GenericEntityException {
-        ModelEntity modelEntity = getModelReader().getModelEntity(entityName);
-        List<GenericValue> entitiesToRemove = findList(entityName, condition, null, null, null, false);
-
-        List<GenericPK> primaryKeys = new ArrayList<>();
-        for (GenericValue entity : entitiesToRemove) {
-            primaryKeys.add(entity.getPrimaryKey());
-        }
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("count", entitiesToRemove.size());
-        result.put("primaryKeys", primaryKeys);
-
-        if (dryRun) {
-            return result;
-        }
-
-        boolean beganTransaction = false;
-        try {
-            if (ALWAYS_USE_TRANS) {
-                beganTransaction = TransactionUtil.begin();
-            }
-
-            GenericHelper helper = getEntityHelper(entityName);
-
-            String entityEcaReaderName = EntityEcaUtil.getEntityEcaReaderName(this.delegatorBaseName);
-            boolean hasEntityEcaRules = UtilValidate.isNotEmpty(
-                    EntityEcaUtil.getEntityEcaCache(entityEcaReaderName).get(entityName));
-
-            List<GenericValue> removedEntities = (testMode || hasEntityEcaRules)
-                    ? entitiesToRemove
-                    : Collections.emptyList();
-
-            int rowsAffected = 0;
-            if (!removedEntities.isEmpty()) {
-                for (GenericValue entity : removedEntities) {
-                    rowsAffected += removeValue(entity);
-                }
-            } else {
-                rowsAffected = helper.removeByCondition(this, modelEntity, condition);
-                if (rowsAffected > 0) {
-                    this.clearCacheLine(entityName);
-                }
-            }
-
-            if (testMode) {
-                for (GenericValue entity : removedEntities) {
-                    storeForTestRollback(new TestOperation(OperationType.DELETE, entity));
-                }
-            }
-
-            TransactionUtil.commit(beganTransaction);
-            result.put("count", rowsAffected);
-            return result;
-        } catch (IllegalStateException | GenericEntityException e) {
-            String errMsg = "Failure in removeByCondition operation for entity [" + entityName + "]: " + e.toString() + ". Rolling back transaction.";
-            Debug.logError(e, errMsg, MODULE);
-            TransactionUtil.rollback(beganTransaction, errMsg, e);
-            throw new GenericEntityException(e);
-        }
+        return removeByCondition(entityName, ecl, dryRun);
     }
 
     /* (non-Javadoc)
@@ -1249,30 +1186,42 @@ public class GenericDelegator implements Delegator {
      */
     @Override
     public int removeByCondition(String entityName, EntityCondition condition) throws GenericEntityException {
+        Map<String, Object> result = removeByCondition(entityName, condition, false);
+        return result != null ? (Integer) result.get("count") : 0;
+    }
+
+    /* (non-Javadoc)
+     * @see org.apache.ofbiz.entity.Delegator#removeByCondition(java.lang.String, org.apache.ofbiz.entity.condition.EntityCondition, boolean)
+     */
+    @Override
+    public Map<String, Object> removeByCondition(String entityName, EntityCondition condition, boolean dryRun) throws GenericEntityException {
         boolean beganTransaction = false;
         try {
-            if (ALWAYS_USE_TRANS) {
+            if (ALWAYS_USE_TRANS && !dryRun) {
                 beganTransaction = TransactionUtil.begin();
             }
 
             ModelEntity modelEntity = getModelReader().getModelEntity(entityName);
             GenericHelper helper = getEntityHelper(entityName);
 
-            // We check if there are eca rules for this entity
             String entityEcaReaderName = EntityEcaUtil.getEntityEcaReaderName(this.delegatorBaseName);
             boolean hasEntityEcaRules = UtilValidate.isNotEmpty(
                     EntityEcaUtil.getEntityEcaCache(entityEcaReaderName).get(entityName));
 
-            // When we delete in mass, if we are in test mode or the entity have an eeca linked we will remove one by one
-            // for test mode to help the rollback
-            // for eeca to analyse each value to check if a condition match
-            List<GenericValue> removedEntities = (testMode || hasEntityEcaRules)
+            List<GenericValue> entitiesToRemove = (testMode || hasEntityEcaRules || dryRun)
                     ? findList(entityName, condition, null, null, null, false)
                     : Collections.emptyList();
 
             int rowsAffected = 0;
-            if (!removedEntities.isEmpty()) {
-                for (GenericValue entity : removedEntities) {
+            List<GenericPK> primaryKeys = new ArrayList<>();
+
+            if (dryRun) {
+                for (GenericValue entity : entitiesToRemove) {
+                    primaryKeys.add(entity.getPrimaryKey());
+                    rowsAffected++;
+                }
+            } else if (!entitiesToRemove.isEmpty()) {
+                for (GenericValue entity : entitiesToRemove) {
                     rowsAffected += removeValue(entity);
                 }
             } else {
@@ -1282,17 +1231,26 @@ public class GenericDelegator implements Delegator {
                 }
             }
 
-            if (testMode) {
-                for (GenericValue entity : removedEntities) {
+            if (testMode && !dryRun) {
+                for (GenericValue entity : entitiesToRemove) {
                     storeForTestRollback(new TestOperation(OperationType.DELETE, entity));
                 }
             }
-            TransactionUtil.commit(beganTransaction);
-            return rowsAffected;
+
+            if (!dryRun) {
+                TransactionUtil.commit(beganTransaction);
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("count", rowsAffected);
+            result.put("primaryKeys", primaryKeys);
+            return result;
         } catch (IllegalStateException | GenericEntityException e) {
             String errMsg = "Failure in removeByCondition operation for entity [" + entityName + "]: " + e.toString() + ". Rolling back transaction.";
             Debug.logError(e, errMsg, MODULE);
-            TransactionUtil.rollback(beganTransaction, errMsg, e);
+            if (!dryRun) {
+                TransactionUtil.rollback(beganTransaction, errMsg, e);
+            }
             throw new GenericEntityException(e);
         }
     }

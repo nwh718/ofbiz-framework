@@ -805,6 +805,22 @@ public interface Delegator extends DelegatorProvider {
      * @param fields
      *            The fields of the named entity to query by with their
      *            corresponding values
+     * @param dryRun
+     *            When true, does not actually delete records but returns
+     *            information about what would be deleted
+     * @return Map containing "count" (Integer) and "primaryKeys" (List<GenericPK>)
+     *         when dryRun is true; otherwise returns null
+     */
+    Map<String, Object> removeByAnd(String entityName, Map<String, ? extends Object> fields, boolean dryRun) throws GenericEntityException;
+
+    /**
+     * Removes/deletes Generic Entity records found by all of the specified
+     * fields (ie: combined using AND)
+     * @param entityName
+     *            The Name of the Entity as defined in the entity XML file
+     * @param fields
+     *            The fields of the named entity to query by with their
+     *            corresponding values
      * @return int representing number of rows effected by this operation
      */
     int removeByAnd(String entityName, Object... fields) throws GenericEntityException;
@@ -818,6 +834,20 @@ public interface Delegator extends DelegatorProvider {
      * @return int representing number of rows effected by this operation
      */
     int removeByCondition(String entityName, EntityCondition condition) throws GenericEntityException;
+
+    /**
+     * Removes/deletes Generic Entity records found by the condition
+     * @param entityName
+     *            The Name of the Entity as defined in the entity XML file
+     * @param condition
+     *            The condition used to restrict the removing
+     * @param dryRun
+     *            When true, does not actually delete records but returns
+     *            information about what would be deleted
+     * @return Map containing "count" (Integer) and "primaryKeys" (List<GenericPK>)
+     *         when dryRun is true; otherwise returns null
+     */
+    Map<String, Object> removeByCondition(String entityName, EntityCondition condition, boolean dryRun) throws GenericEntityException;
 
     /**
      * Remove a Generic Entity corresponding to the primaryKey
