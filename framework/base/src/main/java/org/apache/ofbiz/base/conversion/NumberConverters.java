@@ -39,38 +39,14 @@ public class NumberConverters implements ConverterLoader {
             ((DecimalFormat) nf).setParseBigDecimal(true);
             // CHECKSTYLE_ON: ALMOST_ALL
         }
-
-        boolean hasExponent = false;
-        for (int i = 0; i < str.length(); i++) {
-            char c = str.charAt(i);
-            if (c == 'e' || c == 'E') {
-                hasExponent = true;
-                break;
-            }
-        }
-
-        if (hasExponent) {
-            try {
-                if (nf instanceof DecimalFormat) {
-                    DecimalFormat df = (DecimalFormat) nf;
-                    char decimalSeparator = df.getDecimalFormatSymbols().getDecimalSeparator();
-                    char groupingSeparator = df.getDecimalFormatSymbols().getGroupingSeparator();
-                    char minusSign = df.getDecimalFormatSymbols().getMinusSign();
-                    String cleanStr = str.replace(String.valueOf(groupingSeparator), "")
-                                         .replace(minusSign, '-')
-                                         .replace(decimalSeparator, '.');
-                    return new BigDecimal(cleanStr);
-                } else {
-                    return new BigDecimal(str);
-                }
-            } catch (NumberFormatException e) {
-            }
-        }
-
         try {
             return nf.parse(str);
         } catch (ParseException e) {
-            throw new ConversionException(e);
+            try {
+                return new BigDecimal(str);
+            } catch (NumberFormatException nfe) {
+                throw new ConversionException(e);
+            }
         }
     }
 
