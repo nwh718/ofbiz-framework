@@ -810,6 +810,38 @@ public interface Delegator extends DelegatorProvider {
     int removeByAnd(String entityName, Object... fields) throws GenericEntityException;
 
     /**
+     * Removes/deletes Generic Entity records found by all of the specified
+     * fields (ie: combined using AND), or returns a dry run result
+     * @param entityName
+     *            The Name of the Entity as defined in the entity XML file
+     * @param fields
+     *            The fields of the named entity to query by with their
+     *            corresponding values
+     * @param dryRun
+     *            If true, do not actually delete, just return the count and
+     *            primary keys of records that would be deleted
+     * @return If dryRun is true, returns a Map with "count" (Integer) and
+     *         "primaryKeys" (List&lt;GenericPK&gt;); otherwise returns null
+     */
+    Map&lt;String, Object&gt; removeByAnd(String entityName, Map&lt;String, ? extends Object&gt; fields, boolean dryRun) throws GenericEntityException;
+
+    /**
+     * Removes/deletes Generic Entity records found by all of the specified
+     * fields (ie: combined using AND), or returns a dry run result
+     * @param entityName
+     *            The Name of the Entity as defined in the entity XML file
+     * @param fields
+     *            The fields of the named entity to query by with their
+     *            corresponding values
+     * @param dryRun
+     *            If true, do not actually delete, just return the count and
+     *            primary keys of records that would be deleted
+     * @return If dryRun is true, returns a Map with "count" (Integer) and
+     *         "primaryKeys" (List&lt;GenericPK&gt;); otherwise returns null
+     */
+    Map&lt;String, Object&gt; removeByAnd(String entityName, Object[] fields, boolean dryRun) throws GenericEntityException;
+
+    /**
      * Removes/deletes Generic Entity records found by the condition
      * @param entityName
      *            The Name of the Entity as defined in the entity XML file
@@ -818,6 +850,21 @@ public interface Delegator extends DelegatorProvider {
      * @return int representing number of rows effected by this operation
      */
     int removeByCondition(String entityName, EntityCondition condition) throws GenericEntityException;
+
+    /**
+     * Removes/deletes Generic Entity records found by the condition, or
+     * returns a dry run result
+     * @param entityName
+     *            The Name of the Entity as defined in the entity XML file
+     * @param condition
+     *            The condition used to restrict the removing
+     * @param dryRun
+     *            If true, do not actually delete, just return the count and
+     *            primary keys of records that would be deleted
+     * @return If dryRun is true, returns a Map with "count" (Integer) and
+     *         "primaryKeys" (List&lt;GenericPK&gt;); otherwise returns null
+     */
+    Map&lt;String, Object&gt; removeByCondition(String entityName, EntityCondition condition, boolean dryRun) throws GenericEntityException;
 
     /**
      * Remove a Generic Entity corresponding to the primaryKey
