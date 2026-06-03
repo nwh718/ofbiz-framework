@@ -42,11 +42,7 @@ public class NumberConverters implements ConverterLoader {
         try {
             return nf.parse(str);
         } catch (ParseException e) {
-            try {
-                return new BigDecimal(str);
-            } catch (NumberFormatException nfe) {
-                throw new ConversionException(e);
-            }
+            throw new ConversionException(e);
         }
     }
 
