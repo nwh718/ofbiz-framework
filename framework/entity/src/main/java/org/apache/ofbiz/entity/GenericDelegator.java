@@ -1163,13 +1163,29 @@ public class GenericDelegator implements Delegator {
         return removeByAnd(entityName, UtilMisc.<String, Object>toMap(fields));
     }
 
+    public Map<String, Object> removeByAnd(String entityName, boolean dryRun, Object... fields) throws GenericEntityException {
+        return removeByAnd(entityName, UtilMisc.<String, Object>toMap(fields), dryRun);
+    }
+
     /* (non-Javadoc)
      * @see org.apache.ofbiz.entity.Delegator#removeByAnd(java.lang.String, java.util.Map)
      */
     @Override
     public int removeByAnd(String entityName, Map<String, ? extends Object> fields) throws GenericEntityException {
+        return ((Number) removeByAnd(entityName, fields, false).get("count")).intValue();
+    }
+
+    public Map<String, Object> removeByAnd(String entityName, Map<String, ? extends Object> fields, boolean dryRun)
+            throws GenericEntityException {
         EntityCondition ecl = EntityCondition.makeCondition(fields);
-        return removeByCondition(entityName, ecl);
+        if (dryRun) {
+            List<Map<String, Object>> primaryKeys = this.findList(entityName, ecl, null, null, null, false).stream()
+                    .map(GenericValue::getPrimaryKey)
+                    .map(primaryKey -> primaryKey.getAllFields())
+                    .collect(Collectors.toList());
+            return UtilMisc.<String, Object>toMap("count", primaryKeys.size(), "primaryKeys", primaryKeys);
+        }
+        return UtilMisc.<String, Object>toMap("count", removeByCondition(entityName, ecl), "primaryKeys", Collections.emptyList());
     }
 
     /* (non-Javadoc)
@@ -1223,46 +1239,6 @@ public class GenericDelegator implements Delegator {
             TransactionUtil.rollback(beganTransaction, errMsg, e);
             throw new GenericEntityException(e);
         }
-    }
-
-    /* (non-Javadoc)
-     * @see org.apache.ofbiz.entity.Delegator#removeByAnd(java.lang.String, java.util.Map, boolean)
-     */
-    @Override
-    public Map&lt;String, Object&gt; removeByAnd(String entityName, Map&lt;String, ? extends Object&gt; fields, boolean dryRun) throws GenericEntityException {
-        EntityCondition ecl = EntityCondition.makeCondition(fields);
-        return removeByCondition(entityName, ecl, dryRun);
-    }
-
-    /* (non-Javadoc)
-     * @see org.apache.ofbiz.entity.Delegator#removeByAnd(java.lang.String, java.lang.Object[], boolean)
-     */
-    @Override
-    public Map&lt;String, Object&gt; removeByAnd(String entityName, Object[] fields, boolean dryRun) throws GenericEntityException {
-        return removeByAnd(entityName, UtilMisc.&lt;String, Object&gt;toMap(fields), dryRun);
-    }
-
-    /* (non-Javadoc)
-     * @see org.apache.ofbiz.entity.Delegator#removeByCondition(java.lang.String, org.apache.ofbiz.entity.condition.EntityCondition, boolean)
-     */
-    @Override
-    public Map&lt;String, Object&gt; removeByCondition(String entityName, EntityCondition condition, boolean dryRun) throws GenericEntityException {
-        if (!dryRun) {
-            removeByCondition(entityName, condition);
-            return null;
-        }
-
-        Map&lt;String, Object&gt; result = new HashMap&lt;&gt;();
-        List&lt;GenericPK&gt; primaryKeys = new java.util.ArrayList&lt;&gt;();
-
-        List&lt;GenericValue&gt; entities = findList(entityName, condition, null, null, null, false);
-        for (GenericValue entity : entities) {
-            primaryKeys.add(entity.getPrimaryKey());
-        }
-
-        result.put("count", primaryKeys.size());
-        result.put("primaryKeys", primaryKeys);
-        return result;
     }
 
     /* (non-Javadoc)
