@@ -64,7 +64,6 @@ public class NumberConverters implements ConverterLoader {
                     return new BigDecimal(str);
                 }
             } catch (NumberFormatException e) {
-                // Ignore and fall back to nf.parse
             }
         }
 
