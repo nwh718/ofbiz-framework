@@ -371,28 +371,21 @@ public class UtilCodec {
         }
 
         // do strict tests and handle if any mixed, multiple, nested encoding were found
-        boolean warnEnabled = UtilProperties.getPropertyAsBoolean("owasp", "canonicalize.warn", true);
         if (foundCount >= 2 && mixedCount > 1) {
             if (restrictMultiple || restrictMixed) {
                 throw new IntrusionException("Input validation failure");
             }
-            if (warnEnabled) {
-                Debug.logWarning("Multiple (" + foundCount + "x) and mixed encoding (" + mixedCount + "x) detected in " + input, MODULE);
-            }
+            Debug.logWarning("Multiple (" + foundCount + "x) and mixed encoding (" + mixedCount + "x) detected in " + input, MODULE);
         } else if (foundCount >= 2) {
             if (restrictMultiple) {
                 throw new IntrusionException("Input validation failure");
             }
-            if (warnEnabled) {
-                Debug.logWarning("Multiple (" + foundCount + "x) encoding detected in " + input, MODULE);
-            }
+            Debug.logWarning("Multiple (" + foundCount + "x) encoding detected in " + input, MODULE);
         } else if (mixedCount > 1) {
             if (restrictMixed) {
                 throw new IntrusionException("Input validation failure");
             }
-            if (warnEnabled) {
-                Debug.logWarning("Mixed encoding (" + mixedCount + "x) detected in " + input, MODULE);
-            }
+            Debug.logWarning("Mixed encoding (" + mixedCount + "x) detected in " + input, MODULE);
         }
         return working;
     }
