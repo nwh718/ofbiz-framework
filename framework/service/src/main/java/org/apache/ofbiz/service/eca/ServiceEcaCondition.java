@@ -203,9 +203,7 @@ public class ServiceEcaCondition implements java.io.Serializable {
             }
         }
         if (cond == null) {
-            if (org.apache.ofbiz.base.util.UtilProperties.getPropertyAsBoolean("service", "logEcaConditionNullWarning", true)) {
-                Debug.logWarning("doRealCompare returned null, returning false", MODULE);
-            }
+            Debug.logWarning("doRealCompare returned null, returning false", MODULE);
             return false;
         }
         return cond;

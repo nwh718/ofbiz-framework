@@ -1953,6 +1953,9 @@ public class ModelService extends AbstractMap<String, Object> implements Seriali
      */
     public void informIfDeprecated() {
         if (this.deprecatedUseInstead != null) {
+            if (!UtilProperties.getPropertyAsBoolean("service", "logDeprecatedServiceWarning", true)) {
+                return;
+            }
             StringBuilder informMsg = new StringBuilder("DEPRECATED: the service ")
                     .append(name).append(" has been deprecated and replaced by ").append(deprecatedUseInstead);
             if (this.deprecatedSince != null) {
