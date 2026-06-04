@@ -38,7 +38,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import javax.wsdl.Binding;
@@ -119,8 +118,6 @@ public class ModelService extends AbstractMap<String, Object> implements Seriali
     public static final String SUCCESS_MESSAGE_LIST = "successMessageList";
 
     private static final String RESOURCE = "ServiceErrorUiLabels";
-    private static final String SHOW_DEPRECATED_SERVICE_WARNINGS_PROP = "showDeprecatedServiceWarnings";
-    private static final Set<String> DEPRECATED_SERVICE_WARNINGS_LOGGED = ConcurrentHashMap.newKeySet();
 
     /** The name of this service */
     private String name;
@@ -1951,19 +1948,11 @@ public class ModelService extends AbstractMap<String, Object> implements Seriali
         }
     }
 
-    private static boolean shouldLogDeprecatedServiceWarning(String serviceName) {
-        if (!UtilProperties.getPropertyAsBoolean("service", SHOW_DEPRECATED_SERVICE_WARNINGS_PROP, true)) {
-            return false;
-        }
-        return DEPRECATED_SERVICE_WARNINGS_LOGGED.add(UtilValidate.isNotEmpty(serviceName)
-                ? serviceName : MODULE + ".unnamedDeprecatedService");
-    }
-
     /**
      * if the service is declare as deprecated, create a log warning with the reason
      */
     public void informIfDeprecated() {
-        if (this.deprecatedUseInstead != null && shouldLogDeprecatedServiceWarning(name)) {
+        if (this.deprecatedUseInstead != null) {
             StringBuilder informMsg = new StringBuilder("DEPRECATED: the service ")
                     .append(name).append(" has been deprecated and replaced by ").append(deprecatedUseInstead);
             if (this.deprecatedSince != null) {
