@@ -466,7 +466,7 @@ public final class RenderableFtlFormElementsBuilder {
         }
 
         Map<String, String> uiLabelMap = UtilGenerics.cast(context.get("uiLabelMap"));
-        if (uiLabelMap == null) {
+        if (uiLabelMap == null && UtilProperties.getPropertyAsBoolean("widget", "widget.warn.uilabelmap.missing", true)) {
             Debug.logWarning("Could not find uiLabelMap in context", MODULE);
         }
 
@@ -589,7 +589,7 @@ public final class RenderableFtlFormElementsBuilder {
         final Locale locale = (Locale) context.get("locale");
 
         final Map<String, String> uiLabelMap = UtilGenerics.cast(context.get("uiLabelMap"));
-        if (uiLabelMap == null) {
+        if (uiLabelMap == null && UtilProperties.getPropertyAsBoolean("widget", "widget.warn.uilabelmap.missing", true)) {
             Debug.logWarning("Could not find uiLabelMap in context", MODULE);
         }
 
@@ -691,7 +691,7 @@ public final class RenderableFtlFormElementsBuilder {
         }
 
         final Map<String, String> uiLabelMap = UtilGenerics.cast(context.get("uiLabelMap"));
-        if (uiLabelMap == null) {
+        if (uiLabelMap == null && UtilProperties.getPropertyAsBoolean("widget", "widget.warn.uilabelmap.missing", true)) {
             Debug.logWarning("Could not find uiLabelMap in context", MODULE);
         }
 

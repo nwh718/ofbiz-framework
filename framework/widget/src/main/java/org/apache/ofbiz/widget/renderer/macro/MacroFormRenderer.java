@@ -1488,7 +1488,7 @@ public final class MacroFormRenderer implements FormStringRenderer {
         Map<String, Object> uiLabelMap = UtilGenerics.cast(context.get("uiLabelMap"));
         if (uiLabelMap != null) {
             clearText = (String) uiLabelMap.get("CommonClear");
-        } else {
+        } else if (UtilProperties.getPropertyAsBoolean("widget", "widget.warn.uilabelmap.missing", true)) {
             Debug.logWarning("Could not find uiLabelMap in context", MODULE);
         }
         Boolean showDescription = lookupField.getShowDescription();
@@ -1615,7 +1615,9 @@ public final class MacroFormRenderer implements FormStringRenderer {
         String pageLabel = "";
         String commonDisplaying = "";
         if (uiLabelMap == null) {
-            Debug.logWarning("Could not find uiLabelMap in context", MODULE);
+            if (UtilProperties.getPropertyAsBoolean("widget", "widget.warn.uilabelmap.missing", true)) {
+                Debug.logWarning("Could not find uiLabelMap in context", MODULE);
+            }
         } else {
             pageLabel = uiLabelMap.get("CommonPage");
             Map<String, Integer> messageMap = UtilMisc.toMap("lowCount", lowIndex + 1, "highCount", lowIndex + actualPageSize, "total", listSize);
