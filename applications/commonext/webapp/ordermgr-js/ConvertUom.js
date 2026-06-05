@@ -31,6 +31,9 @@ function getConvertedPrice(element, uomId, uomIdTo, rowCount, orderCurrencyUnitP
                 jQuery('#orderCurrencyUnitPrice_'+rowCount).val(orderCurrencyUnitPrice);
                 jQuery('#unitCost_'+rowCount).val(unitCost);
             }
+        },
+        error: function() {
+            ofbizLogger.warnOnce("ConvertUom.getConvertedPrice", "ConvertUom: Failed to convert UOM price");
         }
     });
 }

@@ -25,6 +25,9 @@ function markOrderViewed() {
         success: function(data) {
             jQuery("#isViewed").fadeOut('fast');
             jQuery("#viewed").fadeIn('fast');
+        },
+        error: function() {
+            ofbizLogger.warnOnce("order.markOrderViewed", "order: Failed to mark order as viewed");
         }
     });
 }

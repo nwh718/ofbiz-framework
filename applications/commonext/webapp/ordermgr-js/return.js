@@ -17,46 +17,29 @@ specific language governing permissions and limitations
 under the License.
 */
 
-jQuery(document).ready(function() {
-    jQuery('#returnHeaderTypeId').change(function() {
+jQuery(document).ready( function() {
+    jQuery('#returnHeaderTypeId').change( function() {
         changeStatusCorrespondingToHeaderType();
     });
 });
 
-function logReturnWarning(key, message) {
-    if (window.ofbizLogger && typeof window.ofbizLogger.warnOnce === 'function') {
-        window.ofbizLogger.warnOnce(key, message);
-    }
-}
-
 function changeStatusCorrespondingToHeaderType() {
-    var returnHeaderTypeId = jQuery('#returnHeaderTypeId').val();
-    if (!returnHeaderTypeId) {
-        logReturnWarning('return-header-type-empty', 'Return header type is empty while loading status items.');
-        return;
-    }
+    var listOptions = [];
     jQuery.ajax({
         url: '/ordermgr/control/getStatusItemsForReturn',
+        async: false,
         type: 'POST',
-        data: {returnHeaderTypeId: returnHeaderTypeId},
-        success: function(data) {
-            var statusItems = data && data.statusItems ? data.statusItems : [];
+        data: {returnHeaderTypeId: jQuery('#returnHeaderTypeId').val()},
+        success: function (data) {
+            var statusItems = data.statusItems;
             var status = jQuery('#statusId');
-            status.find('option').remove();
-            if (!statusItems.length) {
-                logReturnWarning('return-status-items-empty', 'No status items were returned for the selected return header type.');
-                return;
-            }
-            jQuery.each(statusItems, function() {
-                var statusItem = this;
-                if (!statusItem || !statusItem.statusId) {
-                    return;
-                }
-                status.append(jQuery('<option value=' + statusItem.statusId + '>' + statusItem.description + '</option>'));
+            status.find("option").remove();
+            statusItems.each( function(statusItem) {
+                status.append(jQuery("<option value = " + statusItem.statusId + " > " + statusItem.description + " </option>"));
             });
         },
         error: function() {
-            logReturnWarning('return-status-items-request-failed', 'Unable to load status items for the selected return header type.');
+            ofbizLogger.warnOnce("return.changeStatusCorrespondingToHeaderType", "return: Failed to fetch status items for return header type");
         }
     });
 }

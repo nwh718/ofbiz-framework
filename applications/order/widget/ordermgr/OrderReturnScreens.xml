@@ -108,6 +108,7 @@ under the License.
                 <set field="headerItem" value="return"/>
                 <set field="tabButtonItem" value="OrderReturnHeader"/>
                 <set field="helpAnchor" value="_create_return"/>
+                <set field="layoutSettings.javaScripts[+0]" value="/common-js/ofbizLogger.js" global="true"/>
                 <set field="layoutSettings.javaScripts[+0]" value="/ordermgr-js/return.js" global="true"/>
                 <property-to-field field="defaultCurrencyUomId" resource="general" property="currency.uom.id.default" default="USD"/>
                 <script location="component://order/src/main/groovy/org/apache/ofbiz/order/orderreturn/ReturnHeader.groovy"/>
