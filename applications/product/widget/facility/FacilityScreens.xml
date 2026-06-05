@@ -1099,6 +1099,7 @@ under the License.
                 <entity-one entity-name="Facility" value-field="facility"/>
                 <property-map resource="ProductUiLabels" map-name="uiLabelMap"/>
                 <set field="title" from-field="uiLabelMap.ProductReceiveInventory"/>
+                <set field="layoutSettings.javaScripts[+0]" value="/common-js/ofbizLogger.js" global="true"/>
                 <set field="layoutSettings.javaScripts[+0]" value="/ordermgr-js/ConvertUom.js" global="true"/>
             </actions>
             <widgets>

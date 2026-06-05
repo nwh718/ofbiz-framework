@@ -17,62 +17,46 @@
  * under the License.
  */
 
-(function(window) {
-    var logger = window.ofbizLogger || {};
-    var warnedMessages = logger.warnedMessages || {};
+var ofbizLogger = (function() {
+    var _warnedKeys = {};
 
-    function _hasConsoleMethod(method) {
-        return window.console && typeof window.console[method] === 'function';
+    function warnOnce(key, message) {
+        if (_warnedKeys[key]) {
+            return;
+        }
+        _warnedKeys[key] = true;
+        if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+            console.warn('[' + key + '] ' + message);
+        }
     }
 
     function warn(message) {
-        if (!message || !_hasConsoleMethod('warn')) {
-            return false;
+        if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+            console.warn(message);
         }
-        window.console.warn(message);
-        return true;
-    }
-
-    function warnOnce(key, message) {
-        var warningKey = key || message;
-        if (!warningKey || warnedMessages[warningKey]) {
-            return false;
-        }
-        warnedMessages[warningKey] = true;
-        return warn(message);
     }
 
     function error(message) {
-        if (!message || !_hasConsoleMethod('error')) {
-            return false;
-        }
-        window.console.error(message);
-        return true;
-    }
-
-    function errorOnce(key, message) {
-        var errorKey = key || message;
-        if (!errorKey || warnedMessages[errorKey]) {
-            return false;
-        }
-        warnedMessages[errorKey] = true;
-        return error(message);
-    }
-
-    function clearWarned(key) {
-        if (key) {
-            delete warnedMessages[key];
-        } else {
-            warnedMessages = {};
-            logger.warnedMessages = warnedMessages;
+        if (typeof console !== 'undefined' && typeof console.error === 'function') {
+            console.error(message);
         }
     }
 
-    logger.warnedMessages = warnedMessages;
-    logger.warn = warn;
-    logger.warnOnce = warnOnce;
-    logger.error = error;
-    logger.errorOnce = errorOnce;
-    logger.clearWarned = clearWarned;
-    window.ofbizLogger = logger;
-})(window);
+    function info(message) {
+        if (typeof console !== 'undefined' && typeof console.info === 'function') {
+            console.info(message);
+        }
+    }
+
+    function clearWarnedKeys() {
+        _warnedKeys = {};
+    }
+
+    return {
+        warnOnce: warnOnce,
+        warn: warn,
+        error: error,
+        info: info,
+        clearWarnedKeys: clearWarnedKeys
+    };
+})();

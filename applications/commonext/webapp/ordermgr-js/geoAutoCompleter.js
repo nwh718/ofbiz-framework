@@ -104,15 +104,15 @@ function getAssociatedStateList(countryId, stateId, errorId, divId) {
 
             if (stateList.length <= 1) {
                 if (jQuery("#" + divId).is(':visible') || jQuery("#" + errorId).is(':visible')) {
-                    jQuery("#divId").fadeOut("fast");
-                    jQuery("#errorId").fadeOut("fast");
-                    jQuery("#stateId").off("blur");
+                    jQuery("#" + divId).fadeOut("fast");
+                    jQuery("#" + errorId).fadeOut("fast");
+                    jQuery("#" + stateId).off("blur");
                 }
             } else {
-                jQuery("#divId").fadeIn("fast");
-                jQuery("#stateId").on("blur", function() {
+                jQuery("#" + divId).fadeIn("fast");
+                jQuery("#" + stateId).on("blur", function() {
                     if (jQuery("#" + stateId).val() == "") {
-                        jQuery("#errorId").fadeIn("fast")
+                        jQuery("#" + errorId).fadeIn("fast");
                     }
                 });
             }

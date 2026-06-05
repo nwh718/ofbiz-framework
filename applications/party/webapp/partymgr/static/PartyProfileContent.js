@@ -121,6 +121,7 @@ function getUploadProgressStatus(event){
                     },
                     error: function() {
                          timerId.stop();
+                         ofbizLogger.warnOnce("partyProfile.getUploadProgressStatus", "partyProfile: Failed to retrieve upload progress status");
                     }
                 });
             }
