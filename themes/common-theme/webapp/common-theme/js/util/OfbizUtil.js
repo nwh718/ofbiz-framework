@@ -17,44 +17,6 @@
  * under the License.
  */
 
-// Define global logging configuration and functions
-var OFBIZ_LOG = {
-    enabled: true, // Global toggle for OFBiz logging
-    debug: false, // Set to true for development debugging
-    loggedMessages: new Set(), // Track logged messages to avoid duplicates
-    log: function(message, level) {
-        if (!this.enabled) return;
-        
-        var logLevel = level || 'log';
-        var logKey = logLevel + ':' + message;
-        
-        // Avoid duplicate messages
-        if (this.loggedMessages.has(logKey)) return;
-        this.loggedMessages.add(logKey);
-        
-        if (console && typeof console[logLevel] === 'function') {
-            console[logLevel]('[OFBiz] ' + message);
-        }
-    },
-    warn: function(message) {
-        this.log(message, 'warn');
-    },
-    error: function(message) {
-        this.log(message, 'error');
-    },
-    info: function(message) {
-        this.log(message, 'info');
-    },
-    debug: function(message) {
-        if (this.debug) {
-            this.log(message, 'log');
-        }
-    },
-    clear: function() {
-        this.loggedMessages.clear();
-    }
-};
-
 //Define global variable to store last auto-completer request object (jqXHR).
 var LAST_AUTOCOMP_REF = null;
 
@@ -287,7 +249,7 @@ function bindObservers(bind_element) {
         var form = getForm(this);
         var formName = form.attr("name");
         if (!formName) {
-            OFBIZ_LOG.warn("For lookups to work you must provide a form name!");
+            console.log("Developer: For lookups to work you must provide a form name!");
             return;
         }
         var presentation = element.data("lookup-presentation");
@@ -1678,7 +1640,7 @@ var importLibrary = function () {
                 }
             })
         ).then(onSuccessFn).catch(onErrorFn || function (err) {
-            OFBIZ_LOG.error('Error loading library file(s):\n' + urls.join('\n') + '\n\nDetails: ' + err);
+            console.error('Error:\n' + err + '\n\nFile(s): \n' + urls.join('\n'))
         });
     }
 }();

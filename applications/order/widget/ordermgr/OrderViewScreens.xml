@@ -63,6 +63,7 @@ under the License.
                 <set field="titleProperty" value="OrderViewOrder"/>
                 <set field="headerItem" value="findorders"/>
                 <set field="helpAnchor" value="_order_view"/>
+                <set field="layoutSettings.javaScripts[]" value="/common-js/ofbizLogger.js" global="true"/>
                 <set field="layoutSettings.javaScripts[]" value="/ordermgr-js/order.js" global="true"/>
                 <set field="layoutSettings.javaScripts[]" value="/ordermgr-js/OrderShippingInfo.js" global="true"/>
                 <set field="layoutSettings.javaScripts[]" value="/ordermgr-js/geoAutoCompleter.js" global="true"/>

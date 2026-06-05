@@ -22,105 +22,110 @@ under the License.
  */
 var uiLabelJsonObject = null;
 jQuery(document).ready(function() {
-    var labelObject = ["CommonUpload", "CommonSave", "CommonCompleted", "PartyNoContent"];
-    getJSONuiLabels(labelObject, function(result){
-        uiLabelJsonObjects = result.responseJSON;
+    var labelObject = ['CommonUpload', 'CommonSave', 'CommonCompleted', 'PartyNoContent'];
+    getJSONuiLabels(labelObject, function(result) {
+        uiLabelJsonObject = result.responseJSON || {};
     });
-    jQuery("#progress_bar").progressbar({value: 0});
+    jQuery('#progress_bar').progressbar({value: 0});
 });
 
-function uploadPartyContent(event) {
-    jQuery("#progress_bar").progressbar("option", "value", 0);
+function logPartyProfileWarning(key, message) {
+    if (window.ofbizLogger && typeof window.ofbizLogger.warnOnce === 'function') {
+        window.ofbizLogger.warnOnce(key, message);
+    }
+}
+
+function getPartyProfileLabel(labelKey, fallbackValue) {
+    if (uiLabelJsonObject && uiLabelJsonObject[labelKey]) {
+        return uiLabelJsonObject[labelKey];
+    }
+    return fallbackValue;
+}
+
+function uploadPartyContent() {
+    jQuery('#progress_bar').progressbar('option', 'value', 0);
     var targetFrame = jQuery('#target_upload');
     var infodiv = jQuery('#content-messages');
-    if(infodiv.length < 1){
-        jQuery('<div id="content-messages"></div>').insertAfter(jQuery("#partyContentList"));
+    if (infodiv.length < 1) {
+        jQuery('<div id="content-messages"></div>').insertAfter(jQuery('#partyContentList'));
     }
-    if (targetFrame.length < 1){
+    if (targetFrame.length < 1) {
         jQuery('#partyContent').append("<iframe id='target_upload' name='target_upload' style='display: none' src=''> </iframe>");
     }
-    jQuery('#uploadPartyContent').attr("target", "target_upload");
+    jQuery('#uploadPartyContent').attr('target', 'target_upload');
 
-    var labelField = jQuery("#progressBarSavingMsg");
+    var labelField = jQuery('#progressBarSavingMsg');
     if (labelField.length) {
         labelField.remove();
     }
 }
 
 function uploadCompleted() {
-    var iframePartyContentList = jQuery("#target_upload").contents().find("#partyContentList").html();
+    var iframePartyContentList = jQuery('#target_upload').contents().find('#partyContentList').html();
+    if (iframePartyContentList == null) {
+        logPartyProfileWarning('party-profile-upload-content-missing', 'Uploaded party content response did not include the expected content list.');
+        return;
+    }
 
-    // update partyContentList - copy the Data from the iFrame partyContentList
-    // to the page partyContentList
-    jQuery("#partyContentList").html(iframePartyContentList);
-
-    // Explanation in case of rejected file
+    jQuery('#partyContentList').html(iframePartyContentList);
     jQuery('#progressBarSavingMsg').html("If you don't see your file in Party Content list above, it has been rejected for security reason. Check the log.");
-
-    // Remove explanation in case of rejected file
-    setTimeout(() => { jQuery('#progressBarSavingMsg').hide(); }, 7000);
-
-    // reset progressbar
-    jQuery("#progress_bar").progressbar("option", "value", 0);
-
-
-    // remove iFrame
-    jQuery("#target_upload").remove();
-    return;
+    setTimeout(function() {
+        jQuery('#progressBarSavingMsg').hide();
+    }, 7000);
+    jQuery('#progress_bar').progressbar('option', 'value', 0);
+    jQuery('#target_upload').remove();
 }
 
 function checkIframeStatus() {
     var iframePartyContentList = null;
-    // if the new partyContentList isn't created wait a few ms and call the
-    // method again
     jQuery.fjTimer({
         interval: 500,
         repeat: true,
-        tick: function(counter, timerId) {
-            iframePartyContentList = jQuery("#target_upload").contents().find("#partyContentList");
+        tick: function() {
+            var timerId = arguments[1];
+            iframePartyContentList = jQuery('#target_upload').contents().find('#partyContentList');
             if (iframePartyContentList != null && iframePartyContentList.length > 0) {
                 timerId.stop();
                 uploadCompleted();
             }
         }
     });
-    return;
 }
 
-function getUploadProgressStatus(event){
-    importLibrary(["/common/js/jquery/plugins/fjTimer/jquerytimer-min.js"], function(){
-        jQuery('#uploadPartyContent').append("<span id='progressBarSavingMsg' class='label'>" + uiLabelJsonObjects.CommonUpload + "...</span>");
-        var i=0;
+function getUploadProgressStatus() {
+    importLibrary(['/common/js/jquery/plugins/fjTimer/jquerytimer-min.js'], function() {
+        jQuery('#uploadPartyContent').append('<span id="progressBarSavingMsg" class="label">' + getPartyProfileLabel('CommonUpload', 'Upload') + '...</span>');
         jQuery.fjTimer({
             interval: 1000,
             repeat: true,
-            tick: function(counter, timerId) {
-                var timerId = timerId;
+            tick: function() {
+                var timerId = arguments[1];
                 jQuery.ajax({
                     url: '/common-js/control/getFileUploadProgressStatus',
                     dataType: 'json',
                     success: function(data) {
                         if (data._ERROR_MESSAGE_LIST_ != undefined) {
                             jQuery('#content-messages').html(data._ERROR_MESSAGE_LIST_);
+                            logPartyProfileWarning('party-profile-upload-message-list', 'Party content upload returned an error message list.');
                             timerId.stop();
-                         } else if (data._ERROR_MESSAGE_ != undefined) {
-                             jQuery('#content-messages').html(data._ERROR_MESSAGE_);
+                        } else if (data._ERROR_MESSAGE_ != undefined) {
+                            jQuery('#content-messages').html(data._ERROR_MESSAGE_);
+                            logPartyProfileWarning('party-profile-upload-message', 'Party content upload returned an error message.');
                             timerId.stop();
-                         } else {
+                        } else {
                             var readPercent = data.readPercent;
-                            jQuery("#progress_bar").progressbar("option", "value", readPercent);
-                            jQuery('#progressBarSavingMsg').html(uiLabelJsonObjects.CommonUpload + "... (" + readPercent + "%)");
-                            if(readPercent > 99){
-                                jQuery('#progressBarSavingMsg').html(uiLabelJsonObjects.CommonSave + "...");
-                                // stop the fjTimer
+                            jQuery('#progress_bar').progressbar('option', 'value', readPercent);
+                            jQuery('#progressBarSavingMsg').html(getPartyProfileLabel('CommonUpload', 'Upload') + '... (' + readPercent + '%)');
+                            if (readPercent > 99) {
+                                jQuery('#progressBarSavingMsg').html(getPartyProfileLabel('CommonSave', 'Save') + '...');
                                 timerId.stop();
-                                // call the upload complete method to do final stuff
                                 checkIframeStatus();
                             }
-                         }
+                        }
                     },
                     error: function() {
-                         timerId.stop();
+                        logPartyProfileWarning('party-profile-upload-status-request-failed', 'Unable to retrieve party content upload progress.');
+                        timerId.stop();
                     }
                 });
             }

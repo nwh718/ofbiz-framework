@@ -17,100 +17,142 @@
  * under the License.
  */
 
+var countryTargetField = null;
+var countryHiddenTarget = null;
+var stateTargetField = null;
+var stateHiddenTarget = null;
+
+function logGeoAutoCompleterWarning(key, message) {
+    if (window.ofbizLogger && typeof window.ofbizLogger.warnOnce === 'function') {
+        window.ofbizLogger.warnOnce(key, message);
+    }
+}
+
+function getAutocompleteItemValue(ui) {
+    if (!ui || ui.item == null) {
+        return '';
+    }
+    if (typeof ui.item === 'string') {
+        return ui.item;
+    }
+    return ui.item.value || ui.item.label || ui.item.id || '';
+}
+
+function bindStateBlurValidation(selector, errorSelector) {
+    jQuery(selector).off('blur.geoStateValidation').on('blur.geoStateValidation', function() {
+        if (jQuery(selector).val() == '') {
+            jQuery(errorSelector).fadeIn('fast');
+        }
+    });
+}
+
 function getCountryList() {
     countryTargetField = jQuery('#shipToCountryGeo');
-    countryDivToPopulate = jQuery('#shipToCountries');
     countryHiddenTarget = jQuery('#shipToCountryGeoId');
     jQuery.ajax({
-        url: "getCountryList",
-        type: "POST",
-        async: false,
-        success: callCountryAutocompleter
+        url: 'getCountryList',
+        type: 'POST',
+        success: callCountryAutocompleter,
+        error: function() {
+            logGeoAutoCompleterWarning('geo-country-list-request-failed', 'Unable to load country list for shipping autocomplete.');
+        }
     });
 }
 
 function callCountryAutocompleter(data) {
-    countryList = data.countryList;
-    countryTargetField.autocomplete({source: countryList, select: setKeyAsParameterAndGetStateList});
-}
-
-function setKeyAsParameterAndGetStateList(event, ui) {
-    countryHiddenTarget.value = ui.item;
-    getAssociatedStateListForAutoComplete();
+    var countryList = data && data.countryList ? data.countryList : [];
+    if (!countryList.length) {
+        logGeoAutoCompleterWarning('geo-country-list-empty', 'No country list returned for shipping autocomplete.');
+        return;
+    }
+    countryTargetField.autocomplete({
+        source: countryList,
+        select: function() {
+            countryHiddenTarget.val(getAutocompleteItemValue(arguments[1]));
+            getAssociatedStateListForAutoComplete();
+        }
+    });
 }
 
 function getAssociatedStateListForAutoComplete() {
     stateTargetField = jQuery('#shipToStateProvinceGeo');
-    stateDivToPopulate = jQuery('#shipToStates');
     stateHiddenTarget = jQuery('#shipToStateProvinceGeoId');
     jQuery.ajax({
-        url: "getAssociatedStateList",
-        type: "POST",
+        url: 'getAssociatedStateList',
+        type: 'POST',
         data: jQuery('#shippingForm').serialize(),
-        async: false,
-        success: function(data) {callStateAutocompleter(data); }
+        success: callStateAutocompleter,
+        error: function() {
+            logGeoAutoCompleterWarning('geo-associated-state-request-failed', 'Unable to load state or province list for shipping autocomplete.');
+        }
     });
 }
 
-function callStateAutocompleter(data){
-    stateList = data.stateList;
-    if (stateList.size() <= 1) {
-        jQuery('#shipToStateProvinceGeo').value = "No States/Provinces exists";
-        jQuery('#shipToStateProvinceGeoId').value = "_NA_";
-        jQuery("#shipStates").fadeOut("fast");
-        jQuery("#advice-required-shipToStateProvinceGeo").fadeOut("fast");
-        jQuery("#shipToStateProvinceGeo").off("blur");
-    } else {
-        jQuery('#shipToStateProvinceGeo').value = "";
-        jQuery('#shipToStateProvinceGeoId').value = "";
-        jQuery("#shipStates").fadeIn("fast");
-        jQuery("#shipToStateProvinceGeo").on("blur", function() {
-            if (jQuery('#shipToStateProvinceGeo').val() == "") {
-                jQuery("#advice-required-shipToStateProvinceGeo").fadeIn("fast");
-            }
-        });
+function callStateAutocompleter(data) {
+    var stateList = data && data.stateList ? data.stateList : [];
+    if (!stateList.length) {
+        logGeoAutoCompleterWarning('geo-associated-state-empty', 'No state or province list returned for shipping autocomplete.');
     }
-    stateTargetField.autocomplete({source: stateList, select: setKeyAsParameter});
+    if (stateList.length <= 1) {
+        jQuery('#shipToStateProvinceGeo').val('No States/Provinces exists');
+        jQuery('#shipToStateProvinceGeoId').val('_NA_');
+        jQuery('#shipStates').fadeOut('fast');
+        jQuery('#advice-required-shipToStateProvinceGeo').fadeOut('fast');
+        jQuery('#shipToStateProvinceGeo').off('blur.geoStateValidation');
+    } else {
+        jQuery('#shipToStateProvinceGeo').val('');
+        jQuery('#shipToStateProvinceGeoId').val('');
+        jQuery('#shipStates').fadeIn('fast');
+        bindStateBlurValidation('#shipToStateProvinceGeo', '#advice-required-shipToStateProvinceGeo');
+    }
+    stateTargetField.autocomplete({
+        source: stateList,
+        select: function() {
+            stateHiddenTarget.val(getAutocompleteItemValue(arguments[1]));
+        }
+    });
 }
 
-function setKeyAsParameter(event, ui) {
-    stateHiddenTarget.value = ui.item;
-}
-
-//Generic function for fetching country's associated state list.
 function getAssociatedStateList(countryId, stateId, errorId, divId) {
-    var countryGeoId = jQuery("#" + countryId).val();
+    var countryGeoId = jQuery('#' + countryId).val();
+    var stateSelector = '#' + stateId;
+    var errorSelector = '#' + errorId;
+    var divSelector = '#' + divId;
     jQuery.ajax({
         url: '/common-js/control/getAssociatedStateList',
-        type: "POST",
+        type: 'POST',
         data: {countryGeoId: countryGeoId},
         success: function(data) {
-            if (data._ERROR_MESSAGE_ ) {
-                // no data found/ error occurred
+            if (data && data._ERROR_MESSAGE_) {
+                logGeoAutoCompleterWarning('geo-generic-associated-state-error', data._ERROR_MESSAGE_);
                 return;
             }
-            stateList = data.stateList;
-            var stateSelect = jQuery("#" + stateId);
-            stateSelect.find("option").remove();
-            jQuery.each(stateList, function(state) {
-                geoValues = this.split(': ');
-                stateSelect.append(jQuery('<option value = '+geoValues[1]+' >'+geoValues[0]+'</option>'));
+            var stateList = data && data.stateList ? data.stateList : [];
+            if (!stateList.length) {
+                logGeoAutoCompleterWarning('geo-generic-associated-state-empty', 'No associated states were returned for the selected country.');
+            }
+            var stateSelect = jQuery(stateSelector);
+            stateSelect.find('option').remove();
+            jQuery.each(stateList, function() {
+                var geoValues = String(this).split(': ');
+                if (geoValues.length > 1) {
+                    stateSelect.append(jQuery('<option value=' + geoValues[1] + '>' + geoValues[0] + '</option>'));
+                }
             });
 
             if (stateList.length <= 1) {
-                if (jQuery("#" + divId).is(':visible') || jQuery("#" + errorId).is(':visible')) {
-                    jQuery("#divId").fadeOut("fast");
-                    jQuery("#errorId").fadeOut("fast");
-                    jQuery("#stateId").off("blur");
+                if (jQuery(divSelector).is(':visible') || jQuery(errorSelector).is(':visible')) {
+                    jQuery(divSelector).fadeOut('fast');
+                    jQuery(errorSelector).fadeOut('fast');
+                    jQuery(stateSelector).off('blur.geoStateValidation');
                 }
             } else {
-                jQuery("#divId").fadeIn("fast");
-                jQuery("#stateId").on("blur", function() {
-                    if (jQuery("#" + stateId).val() == "") {
-                        jQuery("#errorId").fadeIn("fast")
-                    }
-                });
+                jQuery(divSelector).fadeIn('fast');
+                bindStateBlurValidation(stateSelector, errorSelector);
             }
+        },
+        error: function() {
+            logGeoAutoCompleterWarning('geo-generic-associated-state-request-failed', 'Unable to load associated states for the selected country.');
         }
     });
 }

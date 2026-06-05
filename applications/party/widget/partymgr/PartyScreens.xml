@@ -80,6 +80,7 @@ under the License.
                 <set field="labelTitleProperty" value="PartyTaxAuthInfos"/>
                 <set field="partyId" from-field="parameters.partyId"/>
                 <set field="DONE_PAGE" from-field="parameters.DONE_PAGE" default-value="viewprofile"/>
+                <set field="layoutSettings.javaScripts[]" value="/common-js/ofbizLogger.js" global="true"/>
                 <set field="layoutSettings.javaScripts[]" value="/partymgr/static/PartyProfileContent.js" global="true"/>
                 <script location="component://party/src/main/groovy/org/apache/ofbiz/party/party/ViewProfile.groovy"/>
             </actions>
