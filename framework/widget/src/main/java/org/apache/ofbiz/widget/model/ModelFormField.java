@@ -666,7 +666,7 @@ public final class ModelFormField {
             if (!localizedName.equals(titleFieldName)) {
                 return localizedName;
             }
-        } else if (UtilProperties.getPropertyAsBoolean("widget", "widget.warn.uilabelmap.missing", true)) {
+        } else {
             Debug.logWarning("Could not find uiLabelMap in context while rendering form " + this.modelForm.getName(), MODULE);
         }
 

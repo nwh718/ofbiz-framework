@@ -707,8 +707,8 @@ try {
 }
 catch (err) {
     obj_caller = parent;
-    if (console) {
-        console.log(err);
+    if (typeof OFBIZ_LOG !== 'undefined') {
+        OFBIZ_LOG.error('Error accessing window.opener or parent: ' + err);
     }
 }
 

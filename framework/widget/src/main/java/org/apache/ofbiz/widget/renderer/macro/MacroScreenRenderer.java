@@ -784,9 +784,7 @@ public class MacroScreenRenderer implements ScreenStringRenderer {
         Map<String, String> uiLabelMap = UtilGenerics.cast(context.get("uiLabelMap"));
         String ofLabel = "";
         if (uiLabelMap == null) {
-            if (UtilProperties.getPropertyAsBoolean("widget", "widget.warn.uilabelmap.missing", true)) {
-                Debug.logWarning("Could not find uiLabelMap in context", MODULE);
-            }
+            Debug.logWarning("Could not find uiLabelMap in context", MODULE);
         } else {
             ofLabel = uiLabelMap.get("CommonOf");
             ofLabel = ofLabel.toLowerCase(Locale.getDefault());
@@ -896,9 +894,7 @@ public class MacroScreenRenderer implements ScreenStringRenderer {
         String addColumnLabel = "";
         String addColumnHint = "";
         if (uiLabelMap == null) {
-            if (UtilProperties.getPropertyAsBoolean("widget", "widget.warn.uilabelmap.missing", true)) {
-                Debug.logWarning("Could not find uiLabelMap in context", MODULE);
-            }
+            Debug.logWarning("Could not find uiLabelMap in context", MODULE);
         } else {
             addColumnLabel = uiLabelMap.get("CommonAddColumn");
             addColumnHint = uiLabelMap.get("CommonAddAColumnToThisPortalPage");
@@ -947,9 +943,7 @@ public class MacroScreenRenderer implements ScreenStringRenderer {
         String setColumnSizeHint = "";
 
         if (uiLabelMap == null) {
-            if (UtilProperties.getPropertyAsBoolean("widget", "widget.warn.uilabelmap.missing", true)) {
-                Debug.logWarning("Could not find uiLabelMap in context", MODULE);
-            }
+            Debug.logWarning("Could not find uiLabelMap in context", MODULE);
         } else {
             delColumnLabel = uiLabelMap.get("CommonDeleteColumn");
             delColumnHint = uiLabelMap.get("CommonDeleteThisColumn");
@@ -1027,9 +1021,7 @@ public class MacroScreenRenderer implements ScreenStringRenderer {
         String delPortletHint = "";
         String editAttributeHint = "";
         if (uiLabelMap == null) {
-            if (UtilProperties.getPropertyAsBoolean("widget", "widget.warn.uilabelmap.missing", true)) {
-                Debug.logWarning("Could not find uiLabelMap in context", MODULE);
-            }
+            Debug.logWarning("Could not find uiLabelMap in context", MODULE);
         } else {
             delPortletHint = uiLabelMap.get("CommonDeleteThisPortlet");
             editAttributeHint = uiLabelMap.get("CommonEditPortletAttributes");
